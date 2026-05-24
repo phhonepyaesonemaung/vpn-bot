@@ -5,7 +5,7 @@ const https = require("https");
 
 require("./db");
 
-const { PLANS, getServer } = require("./config");
+const { PLANS, getServer, listRegions } = require("./config");
 const User = require("./models/User");
 const Order = require("./models/Order");
 
@@ -39,13 +39,19 @@ bot.onText(/\/start/, (msg) => {
 });
 
 // ===== BUY =====
-bot.onText(/Buy VPN/, (msg) => {
+bot.onText(/Buy VPN/, async (msg) => {
+  const regions = await listRegions();
+
+  if (regions.length === 0) {
+    return bot.sendMessage(msg.chat.id, "No VPN servers are available right now.");
+  }
+
   bot.sendMessage(msg.chat.id, "Select Region", {
     reply_markup: {
-      inline_keyboard: [
-        [{ text: "Singapore 🇸🇬", callback_data: "region_SG" }],
-        [{ text: "Japan 🇯🇵", callback_data: "region_JP" }]
-      ]
+      inline_keyboard: regions.map(region => [{
+        text: region.label,
+        callback_data: `region_${region.code}`
+      }])
     }
   });
 });
@@ -71,6 +77,10 @@ bot.on("callback_query", async (q) => {
 
   if (data.startsWith("plan_")) {
     const plan = data.split("_")[1];
+    if (!userState[chatId]) {
+      return bot.sendMessage(chatId, "Please choose a region first.");
+    }
+
     userState[chatId].plan = plan;
 
     bot.sendMessage(chatId,
@@ -83,8 +93,11 @@ Send screenshot`);
   if (data.startsWith("approve_")) {
     const userId = data.split("_")[1];
     const state = userState[userId];
+    if (!state?.region || !state?.plan) {
+      return bot.sendMessage(ADMIN_ID, "This order is missing region or plan. Ask the user to order again.");
+    }
 
-    const api = getServer(state.region);
+    const api = await getServer(state.region);
 
     const { key, keyId } = await createKey(api, userId, PLANS[state.plan].gb);
 
@@ -123,7 +136,7 @@ bot.on("photo", (msg) => {
   const username = msg.from.username ? `@${msg.from.username}` : msg.from.id;
 
   bot.sendMessage(ADMIN_ID,
-`📥 New Order
+`New Order
 
 User: ${username}
 Region: ${state.region}

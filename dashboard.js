@@ -1,12 +1,16 @@
 const express = require("express");
 const Order = require("./models/Order");
 const User = require("./models/User");
+const OutlineServer = require("./models/OutlineServer");
+const { REGION_LABELS, listServers } = require("./config");
 
 require("./db");
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || process.env.PORT || 3000;
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD;
+
+app.use(express.urlencoded({ extended: false }));
 
 function formatDate(date) {
   if (!date) return "-";
@@ -29,6 +33,18 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function maskApiUrl(apiUrl) {
+  if (!apiUrl) return "-";
+
+  try {
+    const url = new URL(apiUrl);
+    const suffix = url.pathname.slice(-6);
+    return `${url.origin}/...${suffix}`;
+  } catch {
+    return `${apiUrl.slice(0, 16)}...`;
+  }
+}
+
 function dashboardAuth(req, res, next) {
   if (!DASHBOARD_PASSWORD) return next();
 
@@ -46,6 +62,32 @@ function dashboardAuth(req, res, next) {
 
 app.use(dashboardAuth);
 
+app.post("/servers", async (req, res) => {
+  const region = String(req.body.region || "").trim().toUpperCase();
+  const name = String(req.body.name || "").trim();
+  const apiUrl = String(req.body.apiUrl || "").trim();
+
+  if (region && name && apiUrl) {
+    await OutlineServer.updateOne(
+      { region, apiUrl },
+      { $set: { name } },
+      { upsert: true }
+    );
+  }
+
+  res.redirect("/");
+});
+
+app.post("/servers/delete", async (req, res) => {
+  const id = String(req.body.id || "").trim();
+
+  if (id.match(/^[a-f0-9]{24}$/i)) {
+    await OutlineServer.findByIdAndDelete(id);
+  }
+
+  res.redirect("/");
+});
+
 app.get("/", async (req, res) => {
   const now = new Date();
   const startOfToday = new Date(now);
@@ -60,7 +102,8 @@ app.get("/", async (req, res) => {
     monthAgg,
     activeUsers,
     expiredUsers,
-    users
+    users,
+    outlineServers
   ] = await Promise.all([
     Order.countDocuments(),
     Order.aggregate([{ $group: { _id: null, total: { $sum: "$amount" } } }]),
@@ -76,7 +119,8 @@ app.get("/", async (req, res) => {
     User.countDocuments({
       $or: [{ active: false }, { expireAt: { $lt: now } }]
     }),
-    User.find().sort({ active: -1, expireAt: 1 }).lean()
+    User.find().sort({ active: -1, expireAt: 1 }).lean(),
+    listServers()
   ]);
 
   const totalRevenue = revenueAgg[0]?.total || 0;
@@ -102,6 +146,25 @@ app.get("/", async (req, res) => {
       </tr>
     `;
   }).join("");
+
+  const serverRows = outlineServers.map((server) => `
+    <tr>
+      <td>${escapeHtml(server.region)}</td>
+      <td>${escapeHtml(server.name)}</td>
+      <td>${escapeHtml(maskApiUrl(server.apiUrl))}</td>
+      <td>${formatDate(server.createdAt)}</td>
+      <td>
+        <form method="post" action="/servers/delete">
+          <input type="hidden" name="id" value="${escapeHtml(server._id)}">
+          <button class="danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+  `).join("");
+
+  const regionOptions = Object.entries(REGION_LABELS).map(([code, label]) =>
+    `<option value="${escapeHtml(code)}">${escapeHtml(label)} (${escapeHtml(code)})</option>`
+  ).join("");
 
   res.send(`
     <!doctype html>
@@ -164,6 +227,44 @@ app.get("/", async (req, res) => {
           border: 1px solid #d9e2ec;
           border-radius: 8px;
           overflow-x: auto;
+          margin-bottom: 24px;
+        }
+        .panel {
+          background: white;
+          border: 1px solid #d9e2ec;
+          border-radius: 8px;
+          margin-bottom: 24px;
+        }
+        .table-scroll {
+          overflow-x: auto;
+        }
+        .server-form {
+          display: grid;
+          grid-template-columns: 150px 1fr 2fr auto;
+          gap: 12px;
+          padding: 16px;
+          border-bottom: 1px solid #d9e2ec;
+        }
+        input, select, button {
+          height: 38px;
+          border-radius: 6px;
+          border: 1px solid #bcccdc;
+          padding: 0 10px;
+          font: inherit;
+        }
+        button {
+          border-color: #0f609b;
+          background: #0f609b;
+          color: white;
+          cursor: pointer;
+          font-weight: 700;
+        }
+        button.danger {
+          border-color: #b91c1c;
+          background: #b91c1c;
+        }
+        td form {
+          margin: 0;
         }
         h2 {
           font-size: 18px;
@@ -204,6 +305,11 @@ app.get("/", async (req, res) => {
           background: #fee2e2;
           color: #991b1b;
         }
+        @media (max-width: 760px) {
+          .server-form {
+            grid-template-columns: 1fr;
+          }
+        }
       </style>
     </head>
     <body>
@@ -222,6 +328,34 @@ app.get("/", async (req, res) => {
           <div class="stat"><span>Total orders</span><strong>${totalOrders}</strong></div>
           <div class="stat"><span>Active keys</span><strong>${activeUsers}</strong></div>
           <div class="stat"><span>Expired keys</span><strong>${expiredUsers}</strong></div>
+        </section>
+
+        <section class="panel">
+          <h2>Outline Servers</h2>
+          <form class="server-form" method="post" action="/servers">
+            <select name="region" aria-label="Region" required>
+              ${regionOptions}
+            </select>
+            <input name="name" placeholder="Server name" required>
+            <input name="apiUrl" placeholder="Outline API URL" required>
+            <button type="submit">Add Server</button>
+          </form>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Region</th>
+                  <th>Name</th>
+                  <th>API URL</th>
+                  <th>Added</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${serverRows || '<tr><td colspan="5">No Outline servers configured.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section class="table-wrap">
