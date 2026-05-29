@@ -5,6 +5,8 @@ const schema = new mongoose.Schema({
   amount: Number,
   region: String,
   plan: String,
+  type: { type: String, default: "new" },
+  pendingOrderId: String,
   createdAt: { type: Date, default: Date.now }
 });
 
