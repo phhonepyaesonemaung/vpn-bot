@@ -7,8 +7,12 @@ const schema = new mongoose.Schema({
   key: String,
   keyId: String,
   server: String,
+  dataLimitGb: Number,
   expireAt: Date,
-  active: Boolean
+  active: Boolean,
+  isTrial: { type: Boolean, default: false },
+  trialStartedAt: Date,
+  reminderSentAt: Date
 });
 
 module.exports = mongoose.model("User", schema);
