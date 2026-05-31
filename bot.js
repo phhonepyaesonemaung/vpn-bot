@@ -17,7 +17,7 @@ const TrialClaim = require("./models/TrialClaim");
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 const ADMIN_ID = String(process.env.ADMIN_ID);
-const SUPPORT_CONTACT = process.env.SUPPORT_CONTACT || `tg://user?id=${ADMIN_ID}`;
+const SUPPORT_CONTACT = process.env.SUPPORT_CONTACT || "https://t.me/Htaminlake";
 const REFERRAL_BONUS_DAYS = Number(process.env.REFERRAL_BONUS_DAYS || 3);
 const TRIAL_GB = Number(process.env.TRIAL_GB || 5);
 const TRIAL_DAYS = Number(process.env.TRIAL_DAYS || 3);
@@ -31,44 +31,44 @@ const referralState = {};
 const mainKeyboard = {
   reply_markup: {
     keyboard: [
-      ["Buy VPN", "Renew VPN"],
-      ["My VPN", "Check GB"],
-      ["Free Test Key", "Referral"],
-      ["Support", "Outline Download Guide"],
-      ["User Manual"]
+      ["VPN ဝယ်ရန်", "VPN သက်တမ်းတိုးရန်"],
+      ["ကျွန်ုပ်၏ VPN", "GB စစ်ရန်"],
+      ["အခမဲ့ စမ်းသုံးရန်", "မိတ်ဆက်လင့်ခ်"],
+      ["ကူညီမှု", "Outline ဒေါင်းလုဒ်"],
+      ["အသုံးပြုနည်း"]
     ],
     resize_keyboard: true
   }
 };
 
-const GUIDE = `Outline Download Guide
+const GUIDE = `Outline ဒေါင်းလုဒ်လုပ်နည်း
 
 Android:
-1. Install Outline from Google Play.
-2. Copy your VPN key from this bot.
-3. Open Outline, tap Add Server, paste the key, then connect.
+1. Google Play မှ Outline app ကို install လုပ်ပါ။
+2. ဒီ bot ကပေးတဲ့ VPN key ကို copy လုပ်ပါ။
+3. Outline app ကိုဖွင့်ပြီး Add Server ကိုနှိပ်ပါ။ Key ကို paste လုပ်ပြီး connect လုပ်ပါ။
 
 iPhone / iPad:
-1. Install Outline App from the App Store.
-2. Copy your VPN key from this bot.
-3. Open Outline, add the server, allow VPN configuration, then connect.
+1. App Store မှ Outline App ကို install လုပ်ပါ။
+2. ဒီ bot ကပေးတဲ့ VPN key ကို copy လုပ်ပါ။
+3. Outline ကိုဖွင့်ပြီး server ထည့်ပါ။ VPN configuration ကို allow လုပ်ပြီး connect လုပ်ပါ။
 
 Windows:
-Download Outline Client:
+Outline Client ကို ဒီ link ကနေ download လုပ်ပါ:
 https://s3.amazonaws.com/outline-releases/client/windows/stable/Outline-Client.exe
 
 macOS:
-Install Outline App from the App Store:
+App Store မှ Outline App ကို install လုပ်ပါ:
 https://itunes.apple.com/us/app/outline-app/id1356178125`;
 
-const MANUAL = `User Manual
+const MANUAL = `အသုံးပြုနည်း
 
-1. Buy VPN or request a free test key.
-2. Copy the VPN key sent by the bot.
-3. Open Outline and add the server key.
-4. Use My VPN or Check GB to see your status.
-5. Use Renew VPN before expiry to continue service.
-6. Send Support if you need help.`;
+1. VPN ဝယ်ရန် သို့မဟုတ် အခမဲ့ စမ်းသုံးရန် ကိုနှိပ်ပါ။
+2. Bot ကပေးတဲ့ VPN key ကို copy လုပ်ပါ။
+3. Outline app ကိုဖွင့်ပြီး server key ထည့်ပါ။
+4. အခြေအနေစစ်ရန် ကျွန်ုပ်၏ VPN သို့မဟုတ် GB စစ်ရန် ကိုနှိပ်ပါ။
+5. သက်တမ်းမကုန်ခင် VPN သက်တမ်းတိုးရန် ကိုနှိပ်ပါ။
+6. အကူအညီလိုရင် ကူညီမှု ကိုနှိပ်ပါ။`;
 
 bot.getMe().then((me) => {
   botUsername = me.username;
@@ -139,12 +139,12 @@ async function findLatestUser(telegramId) {
 async function sendUsage(chatId) {
   const user = await findActiveUser(chatId);
   if (!user) {
-    return bot.sendMessage(chatId, "No active VPN key yet. Use Buy VPN or Free Test Key.", mainKeyboard);
+    return bot.sendMessage(chatId, "လက်ရှိအသုံးပြုနေတဲ့ VPN key မရှိသေးပါ။ VPN ဝယ်ရန် သို့မဟုတ် အခမဲ့ စမ်းသုံးရန် ကိုနှိပ်ပါ။", mainKeyboard);
   }
 
   const limitGb = Number(user.dataLimitGb || PLANS[user.plan]?.gb || 0);
   if (!limitGb) {
-    return bot.sendMessage(chatId, "This key has no data limit saved. Please contact support.", mainKeyboard);
+    return bot.sendMessage(chatId, "ဒီ key အတွက် data limit မသိမ်းထားပါ။ ကူညီမှု ကိုနှိပ်ပြီး ဆက်သွယ်ပါ။", mainKeyboard);
   }
 
   try {
@@ -152,36 +152,36 @@ async function sendUsage(chatId) {
     const remainingBytes = Math.max(0, limitGb * GB - usedBytes);
 
     return bot.sendMessage(chatId,
-`VPN Data Status
+`VPN Data အခြေအနေ
 
 Plan: ${user.plan} (${limitGb} GB)
-Used: ${formatGb(usedBytes)} GB
-Remaining: ${formatGb(remainingBytes)} GB
-Expires: ${formatDate(user.expireAt)}
-Days left: ${daysLeft(user.expireAt)}`, mainKeyboard);
+သုံးပြီး: ${formatGb(usedBytes)} GB
+ကျန်ရှိ: ${formatGb(remainingBytes)} GB
+သက်တမ်းကုန်မည့်နေ့: ${formatDate(user.expireAt)}
+ကျန်ရက်: ${daysLeft(user.expireAt)}`, mainKeyboard);
   } catch {
-    return bot.sendMessage(chatId, "I could not check GB right now. Please try again later.", mainKeyboard);
+    return bot.sendMessage(chatId, "အခု GB မစစ်နိုင်သေးပါ။ ခဏနေရင် ထပ်စမ်းကြည့်ပါ။", mainKeyboard);
   }
 }
 
 async function sendMyVpn(chatId) {
   const user = await findLatestUser(chatId);
   if (!user) {
-    return bot.sendMessage(chatId, "You do not have a VPN key yet. Use Buy VPN or Free Test Key.", mainKeyboard);
+    return bot.sendMessage(chatId, "သင့်မှာ VPN key မရှိသေးပါ။ VPN ဝယ်ရန် သို့မဟုတ် အခမဲ့ စမ်းသုံးရန် ကိုနှိပ်ပါ။", mainKeyboard);
   }
 
   const active = user.active && user.expireAt > new Date();
-  const status = active ? "Active" : "Expired";
+  const status = active ? "အသုံးပြုနိုင်" : "သက်တမ်းကုန်";
 
   return bot.sendMessage(chatId,
-`My VPN
+`ကျွန်ုပ်၏ VPN
 
-Status: ${status}
+အခြေအနေ: ${status}
 Region: ${user.region}
 Plan: ${user.plan}
 Data limit: ${user.dataLimitGb || PLANS[user.plan]?.gb || "-"} GB
-Expire date: ${formatDate(user.expireAt)}
-Days left: ${active ? daysLeft(user.expireAt) : 0}
+သက်တမ်းကုန်မည့်နေ့: ${formatDate(user.expireAt)}
+ကျန်ရက်: ${active ? daysLeft(user.expireAt) : 0}
 
 VPN Key:
 ${user.key}`, mainKeyboard);
@@ -196,26 +196,26 @@ async function sendReferral(chatId) {
   }
 
   if (!botUsername) {
-    return bot.sendMessage(chatId, "Referral link is not available right now. Please try again later.", mainKeyboard);
+    return bot.sendMessage(chatId, "မိတ်ဆက်လင့်ခ်ကို အခု မထုတ်ပေးနိုင်သေးပါ။ ခဏနေရင် ထပ်စမ်းကြည့်ပါ။", mainKeyboard);
   }
 
   const link = `https://t.me/${botUsername}?start=ref_${chatId}`;
   return bot.sendMessage(chatId,
-`Referral Program
+`မိတ်ဆက်အစီအစဉ်
 
-Share this link:
+ဒီ link ကို မိတ်ဆွေတွေကို မျှဝေပါ:
 ${link}
 
-When your friend buys VPN, you get ${REFERRAL_BONUS_DAYS} bonus days.`);
+သင့်မိတ်ဆွေ VPN ဝယ်ပြီးရင် သင့်အကောင့်မှာ ${REFERRAL_BONUS_DAYS} ရက် bonus ထပ်ပေးပါမယ်။`);
 }
 
 async function sendSupport(chatId) {
   return bot.sendMessage(chatId,
-`Support
+`ကူညီမှု
 
-Contact: ${SUPPORT_CONTACT}
+ဆက်သွယ်ရန်: ${SUPPORT_CONTACT}
 
-Send your Telegram ID if you need help:
+အကူအညီလိုရင် ဒီ Telegram ID ကို ပို့ပေးပါ:
 ${chatId}`, mainKeyboard);
 }
 
@@ -224,18 +224,18 @@ async function startOrder(msg, type) {
   const regions = await listRegions();
 
   if (regions.length === 0) {
-    return bot.sendMessage(chatId, "No VPN servers are available right now.");
+    return bot.sendMessage(chatId, "လက်ရှိ VPN server မရှိသေးပါ။");
   }
 
   if (type === "renew") {
     const user = await findLatestUser(chatId);
     if (!user) {
-      return bot.sendMessage(chatId, "No existing VPN key found. Please use Buy VPN first.", mainKeyboard);
+      return bot.sendMessage(chatId, "သက်တမ်းတိုးရန် VPN key မတွေ့ပါ။ အရင်ဆုံး VPN ဝယ်ရန် ကိုနှိပ်ပါ။", mainKeyboard);
     }
   }
 
   const prefix = type === "renew" ? "renew_region" : "region";
-  return bot.sendMessage(chatId, type === "renew" ? "Select renewal region" : "Select region", {
+  return bot.sendMessage(chatId, type === "renew" ? "သက်တမ်းတိုးမည့် region ရွေးပါ" : "Region ရွေးပါ", {
     reply_markup: {
       inline_keyboard: regions.map(region => [{
         text: region.label,
@@ -262,15 +262,15 @@ async function createPendingOrder(chatId, username, type, region, plan) {
 
 async function sendPaymentInstructions(chatId, order) {
   return bot.sendMessage(chatId,
-`${order.type === "renew" ? "Renew VPN" : "Buy VPN"}
+`${order.type === "renew" ? "VPN သက်တမ်းတိုးရန်" : "VPN ဝယ်ရန်"}
 
 Region: ${order.region}
 Plan: ${order.plan} GB
-Amount: ${order.amount} Ks
+ကျသင့်ငွေ: ${order.amount} Ks
 
 KPay/AyaPay: ${process.env.KPAY}
 
-After payment, send the screenshot here.
+ငွေပေးချေပြီးရင် screenshot ကို ဒီ chat ထဲ ပို့ပါ။
 Order ID: ${order._id}`, mainKeyboard);
 }
 
@@ -315,10 +315,10 @@ async function applyReferralBonus(order) {
   await referrer.save();
 
   await bot.sendMessage(referrer.telegramId,
-`Referral bonus added.
+`မိတ်ဆက် bonus ထည့်ပြီးပါပြီ။
 
-Bonus: ${REFERRAL_BONUS_DAYS} days
-New expiry: ${formatDate(referrer.expireAt)}`);
+Bonus: ${REFERRAL_BONUS_DAYS} ရက်
+သက်တမ်းအသစ်: ${formatDate(referrer.expireAt)}`);
 }
 
 async function approveOrder(orderId) {
@@ -344,12 +344,12 @@ async function approveOrder(orderId) {
       user.reminderSentAt = null;
       await setDataLimit(user.server, user.keyId, Math.max(user.dataLimitGb, usedGb + plan.gb));
       await user.save();
-      keyMessage = `VPN renewed successfully.
+      keyMessage = `VPN သက်တမ်းတိုးပြီးပါပြီ။
 
 Plan: ${order.plan} GB
-New expiry: ${formatDate(user.expireAt)}
+သက်တမ်းအသစ်: ${formatDate(user.expireAt)}
 
-Your VPN key is unchanged:
+VPN key အဟောင်းကိုပဲ ဆက်သုံးနိုင်ပါတယ်:
 ${user.key}`;
     } else {
       order.type = "new";
@@ -378,11 +378,11 @@ ${user.key}`;
 
 Region: ${order.region}
 Plan: ${order.plan} GB
-Expires: ${formatDate(expireAt)}
+သက်တမ်းကုန်မည့်နေ့: ${formatDate(expireAt)}
 
 ${key}
 
-Use User Manual if you need setup help.`;
+Setup အကူအညီလိုရင် အသုံးပြုနည်း ကိုနှိပ်ပါ။`;
   }
 
   await Order.create({
@@ -408,7 +408,7 @@ async function createTrialKey(chatId, region, from) {
   try {
     await TrialClaim.create({ telegramId: String(chatId) });
   } catch {
-    return bot.sendMessage(chatId, "Free test key is available only once per customer.", mainKeyboard);
+    return bot.sendMessage(chatId, "အခမဲ့ စမ်းသုံး key ကို user တစ်ယောက်လျှင် တစ်ကြိမ်သာ ရနိုင်ပါတယ်။", mainKeyboard);
   }
 
   try {
@@ -433,17 +433,17 @@ async function createTrialKey(chatId, region, from) {
     });
 
     return bot.sendMessage(chatId,
-`Free Test VPN Key
+`အခမဲ့ စမ်းသုံး VPN Key
 
 Data: ${TRIAL_GB} GB
-Expires: ${formatDate(expireAt)}
+သက်တမ်းကုန်မည့်နေ့: ${formatDate(expireAt)}
 
 ${key}
 
-Use User Manual if you need setup help.`, mainKeyboard);
+Setup အကူအညီလိုရင် အသုံးပြုနည်း ကိုနှိပ်ပါ။`, mainKeyboard);
   } catch (err) {
     await TrialClaim.deleteOne({ telegramId: String(chatId) });
-    return bot.sendMessage(chatId, "Could not create test key right now. Please try again later.", mainKeyboard);
+    return bot.sendMessage(chatId, "အခု စမ်းသုံး key မထုတ်ပေးနိုင်သေးပါ။ ခဏနေရင် ထပ်စမ်းကြည့်ပါ။", mainKeyboard);
   }
 }
 
@@ -457,49 +457,49 @@ bot.onText(/\/start(?:\s+(.+))?/, (msg, match) => {
     }
   }
 
-  bot.sendMessage(chatId, "Welcome. Choose an option from the menu.", mainKeyboard);
+  bot.sendMessage(chatId, "မင်္ဂလာပါ။ Menu ထဲက လိုချင်တဲ့ အချက်ကို ရွေးပါ။", mainKeyboard);
 });
 
-bot.onText(/^(Buy VPN|\/buy)$/i, async (msg) => {
+bot.onText(/^(Buy VPN|VPN ဝယ်ရန်|\/buy)$/i, async (msg) => {
   await startOrder(msg, "new");
 });
 
-bot.onText(/^(Renew VPN|\/renew)$/i, async (msg) => {
+bot.onText(/^(Renew VPN|VPN သက်တမ်းတိုးရန်|\/renew)$/i, async (msg) => {
   await startOrder(msg, "renew");
 });
 
-bot.onText(/^(My VPN|\/myvpn)$/i, async (msg) => {
+bot.onText(/^(My VPN|ကျွန်ုပ်၏ VPN|\/myvpn)$/i, async (msg) => {
   await sendMyVpn(String(msg.chat.id));
 });
 
-bot.onText(/^(Check GB|\/gb)$/i, async (msg) => {
+bot.onText(/^(Check GB|GB စစ်ရန်|\/gb)$/i, async (msg) => {
   await sendUsage(String(msg.chat.id));
 });
 
-bot.onText(/^(Referral|\/referral)$/i, async (msg) => {
+bot.onText(/^(Referral|မိတ်ဆက်လင့်ခ်|\/referral)$/i, async (msg) => {
   await sendReferral(String(msg.chat.id));
 });
 
-bot.onText(/^(Support|\/support)$/i, async (msg) => {
+bot.onText(/^(Support|ကူညီမှု|\/support)$/i, async (msg) => {
   await sendSupport(String(msg.chat.id));
 });
 
-bot.onText(/^(Outline Download Guide|\/guide)$/i, (msg) => {
+bot.onText(/^(Outline Download Guide|Outline ဒေါင်းလုဒ်|\/guide)$/i, (msg) => {
   bot.sendMessage(msg.chat.id, GUIDE, mainKeyboard);
 });
 
-bot.onText(/^(User Manual|\/manual)$/i, (msg) => {
+bot.onText(/^(User Manual|အသုံးပြုနည်း|\/manual)$/i, (msg) => {
   bot.sendMessage(msg.chat.id, MANUAL, mainKeyboard);
 });
 
-bot.onText(/^(Free Test Key|\/trial)$/i, async (msg) => {
+bot.onText(/^(Free Test Key|အခမဲ့ စမ်းသုံးရန်|\/trial)$/i, async (msg) => {
   const chatId = String(msg.chat.id);
   const regions = await listRegions();
   if (regions.length === 0) {
-    return bot.sendMessage(chatId, "No VPN servers are available right now.");
+    return bot.sendMessage(chatId, "လက်ရှိ VPN server မရှိသေးပါ။");
   }
 
-  bot.sendMessage(chatId, "Select region for free test key.", {
+  bot.sendMessage(chatId, "အခမဲ့ စမ်းသုံးရန် region ရွေးပါ။", {
     reply_markup: {
       inline_keyboard: regions.map(region => [{
         text: region.label,
@@ -521,7 +521,7 @@ bot.on("callback_query", async (q) => {
     const type = data.startsWith("renew_region_") ? "renew" : "new";
     const region = data.replace("renew_region_", "").replace("region_", "");
 
-    return bot.sendMessage(chatId, "Select plan", {
+    return bot.sendMessage(chatId, "Plan ရွေးပါ", {
       reply_markup: {
         inline_keyboard: Object.keys(PLANS).map(p => [{
           text: `${p} GB - ${PLANS[p].price} Ks`,
@@ -557,7 +557,7 @@ bot.on("callback_query", async (q) => {
     order.reviewedAt = new Date();
     await order.save();
 
-    await bot.sendMessage(order.telegramId, "Payment was rejected. Please contact support if this is a mistake.", mainKeyboard);
+    await bot.sendMessage(order.telegramId, "ငွေပေးချေမှုကို reject လုပ်ထားပါတယ်။ မှားယွင်းတယ်ထင်ရင် ကူညီမှု ကိုနှိပ်ပြီး ဆက်သွယ်ပါ။", mainKeyboard);
     return bot.sendMessage(ADMIN_ID, `Rejected order ${orderId}`);
   }
 
@@ -569,7 +569,7 @@ bot.on("callback_query", async (q) => {
     order.status = "needs_better_screenshot";
     await order.save();
 
-    await bot.sendMessage(order.telegramId, "Please send a clearer payment screenshot for your order.", mainKeyboard);
+    await bot.sendMessage(order.telegramId, "Order အတွက် payment screenshot ကို ပိုရှင်းရှင်းလင်းလင်း ပြန်ပို့ပေးပါ။", mainKeyboard);
     return bot.sendMessage(ADMIN_ID, `Asked for better screenshot on order ${orderId}`);
   }
 });
@@ -592,7 +592,7 @@ async function attachPaymentScreenshot(msg, fileId, fileKind) {
   await order.save();
 
   await notifyAdminOrder(order, fileId, fileKind);
-  await bot.sendMessage(chatId, "Payment received. Waiting for admin approval.", mainKeyboard);
+  await bot.sendMessage(chatId, "Payment screenshot လက်ခံရရှိပါပြီ။ Admin စစ်ဆေးပြီး အတည်ပြုပေးပါမယ်။", mainKeyboard);
   return true;
 }
 
@@ -622,10 +622,10 @@ setInterval(async () => {
   for (const user of reminderUsers) {
     try {
       await bot.sendMessage(user.telegramId,
-`Your VPN key will expire soon.
+`သင့် VPN key သက်တမ်း မကြာခင် ကုန်တော့မယ်။
 
-Days left: ${daysLeft(user.expireAt)}
-Use Renew VPN to continue service.`, mainKeyboard);
+ကျန်ရက်: ${daysLeft(user.expireAt)}
+VPN ဆက်သုံးရန် VPN သက်တမ်းတိုးရန် ကိုနှိပ်ပါ။`, mainKeyboard);
       user.reminderSentAt = new Date();
       await user.save();
     } catch {}
@@ -645,7 +645,7 @@ Use Renew VPN to continue service.`, mainKeyboard);
     await user.save();
 
     try {
-      await bot.sendMessage(user.telegramId, "VPN expired. Use Renew VPN to continue service.", mainKeyboard);
+      await bot.sendMessage(user.telegramId, "VPN သက်တမ်းကုန်သွားပါပြီ။ ဆက်သုံးရန် VPN သက်တမ်းတိုးရန် ကိုနှိပ်ပါ။", mainKeyboard);
     } catch {}
   }
 }, 3600000);
