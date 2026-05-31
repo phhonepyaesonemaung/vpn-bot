@@ -1,7 +1,10 @@
 require("dotenv").config();
+const dns = require("dns");
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 const https = require("https");
+
+dns.setDefaultResultOrder("ipv4first");
 
 require("./db");
 
