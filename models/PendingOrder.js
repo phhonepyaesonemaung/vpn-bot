@@ -21,9 +21,8 @@ const schema = new mongoose.Schema({
   reviewedAt: Date
 });
 
-schema.pre("save", function updateTimestamp(next) {
+schema.pre("save", function updateTimestamp() {
   this.updatedAt = new Date();
-  next();
 });
 
 module.exports = mongoose.model("PendingOrder", schema);
